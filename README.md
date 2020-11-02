@@ -22,3 +22,4 @@ go build cmd/gocache.go
 go build cmd/goctl.go
 
 
+![](https://github.com/livepo/gocache/blob/master/20201102145120.png)
