@@ -2,6 +2,7 @@ package server
 
 import (
     "fmt"
+    "gocache/global"
     "net"
     "bufio"
     "strings"
@@ -13,7 +14,7 @@ import (
 type Server struct {
     ListenAddr string
     AuthToken string
-    Data map[string]string
+    LRU *LRUCache
     Lock *sync.RWMutex
 }
 
@@ -22,7 +23,7 @@ func NewServer(listenaddr string, authtoken string) *Server {
     return &Server{
         ListenAddr: listenaddr,
         AuthToken: authtoken,
-        Data: make(map[string]string),
+        LRU: NewLRUCache(global.CAPACITY),
         Lock: &sync.RWMutex{},
     }
 }

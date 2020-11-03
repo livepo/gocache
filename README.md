@@ -12,14 +12,7 @@ TODO:
 - [ ] 主从同步
 
 
-服务端:
-
-go build cmd/gocache.go
 
 
-客户端:
 
-go build cmd/goctl.go
-
-
-![](https://github.com/livepo/gocache/blob/master/20201102145120.png)
+![](https://github.com/livepo/gocache/blob/master/asset/20201102145120.png)
