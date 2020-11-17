@@ -1,30 +1,46 @@
 package server
 
 import (
-    "fmt"
-    "gocache/global"
-    "net"
     "bufio"
+    "fmt"
+    "gocache/driver"
+    "gocache/global"
+    "log"
+    "net"
     "strings"
-    "errors"
-    "sync"
 )
 
+const (
+    LOGIN = 1
+    COMMAND = 2
+)
 
 type Server struct {
     ListenAddr string
     AuthToken string
-    LRU *LRUCache
-    Lock *sync.RWMutex
+    Cache driver.Cache
 }
 
 
+
 func NewServer(listenaddr string, authtoken string) *Server {
+    var cache driver.Cache
+    switch global.Config.Evict {
+    case "simple":
+        cache = driver.New(global.Config.Capacity).Simple().Build()
+    case "lru":
+        cache = driver.New(global.Config.Capacity).LRU().Build()
+    case "lfu":
+        cache = driver.New(global.Config.Capacity).LFU().Build()
+    case "arc":
+        cache = driver.New(global.Config.Capacity).ARC().Build()
+    default:
+        log.Fatal("error evict type")
+    }
     return &Server{
         ListenAddr: listenaddr,
         AuthToken: authtoken,
-        LRU: NewLRUCache(global.CAPACITY),
-        Lock: &sync.RWMutex{},
+        Cache: cache,
     }
 }
 
@@ -69,8 +85,8 @@ func (s *Server) readCmd(client net.Conn) ([]string, error) {
 
 func (s *Server) HandleClient(client net.Conn) {
     defer client.Close()
-    var state = "login"
-    for state == "login" {
+    var state = LOGIN
+    for state == LOGIN {
         cmd, err := s.readCmd(client)
         if err != nil {
             fmt.Println("parse cmd error", err)
@@ -83,7 +99,7 @@ func (s *Server) HandleClient(client net.Conn) {
             s.outputMsg(client, "authtoken error!")
         } else {
             s.outputMsg(client, "login succeed!")
-            state = "cmd"
+            state = COMMAND
         }
     }
 
@@ -117,7 +133,7 @@ func (s *Server) HandleClient(client net.Conn) {
                     fmt.Println("get error", err)
                     s.outputMsg(client, "get failed, try again")
                 } else {
-                    s.outputMsg(client, value)
+                    s.outputMsg(client, value.(string))
                 }
             }
         }
@@ -131,20 +147,11 @@ func (s *Server) outputMsg(client net.Conn, str string) {
 }
 
 
-func (s *Server) putCmd(key string, value string) error {
-    s.Lock.Lock()
-    s.Data[key] = value
-    s.Lock.Unlock()
-    return nil
+func (s *Server) putCmd(key string, value interface{}) error {
+    return s.Cache.Set(key, value)
 }
 
 
-func (s *Server) getCmd(key string) (string, error) {
-    s.Lock.RLock()
-    defer s.Lock.RUnlock()
-    if v, ok := s.Data[key]; ok {
-        return v, nil
-    } else {
-        return "", errors.New(fmt.Sprintf("key %s not found", key))
-    }
+func (s *Server) getCmd(key string) (interface{}, error) {
+    return s.Cache.Get(key)
 }

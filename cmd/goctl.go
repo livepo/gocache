@@ -1,10 +1,14 @@
 package main
 
-
-import "gocache/client"
+import (
+    "flag"
+    "gocache/client"
+)
 
 
 func main() {
-    cli := client.NewClient(":2021")
+    remote := flag.String("remote", ":2020", "remote address to connect to")
+    flag.Parse()
+    cli := client.NewClient(*remote)
     cli.Serve()
 }

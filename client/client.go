@@ -80,12 +80,11 @@ func (c *Client) Serve() {
     remoteReader := bufio.NewReader(c.remote)
     go c.parseCmd(stdinReader, inputCh)
     go c.parseCmd(remoteReader, remoteCh)
-
     fmt.Print("goctl> ")
     for {
         select {
         case msg := <-inputCh:
-            if len(msg) == 0 {
+            if len(msg) == 0 { // 用户输入回车
                 fmt.Print("goctl> ")
                 continue
             }

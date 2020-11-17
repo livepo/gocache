@@ -2,11 +2,15 @@ package main
 
 
 import (
+    "flag"
     "gocache/server"
 )
 
 
 func main() {
-    serv := server.NewServer(":2021", "loginuser")
+    listenaddr := flag.String("listen", ":2020", "listen address")
+    authtoken := flag.String("auth", "loginuser", "auth login user")
+    flag.Parse()
+    serv := server.NewServer(*listenaddr, *authtoken)
     serv.Serve()
 }
